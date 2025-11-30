@@ -710,7 +710,7 @@
                                 }
                             ]
                         },
-                        center: [-43.2, -22.9], // Rio de Janeiro
+                        center: [-43.4350, -22.9200], // Rio de Janeiro
                         zoom: 10,
                         pitch: 0,
                         bearing: 0,
