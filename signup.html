@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cadastro - Monitor de Alagamentos RJ">
+    <title>Cadastro | Monitor de Alagamentos RJ</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles/custom.css">
+</head>
+<body class="font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    
+    <!-- Signup Container -->
+    <div class="min-h-screen flex items-center justify-center px-4 py-12">
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+            <!-- Logo & Title -->
+            <div class="text-center mb-8">
+                <img src="assets/favicon.ico" alt="OCTA.RIO Logo" class="mx-auto h-12 w-auto mb-4">
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-200">
+                    Criar Conta
+                </h2>
+                <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                    Acesse o Monitor de Alagamentos
+                </p>
+            </div>
+
+            <!-- Signup Form -->
+            <form id="signup-form" novalidate class="space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Nome Completo
+                    </label>
+                    <div class="mt-1">
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            autocomplete="name" 
+                            required
+                            class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm dark:bg-slate-700 dark:text-slate-200"
+                            placeholder="João Silva"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Email
+                    </label>
+                    <div class="mt-1">
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            autocomplete="email" 
+                            required
+                            class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm dark:bg-slate-700 dark:text-slate-200"
+                            placeholder="seu@email.com"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Senha
+                    </label>
+                    <div class="mt-1">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            autocomplete="new-password" 
+                            required
+                            class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm dark:bg-slate-700 dark:text-slate-200"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Confirmar Senha
+                    </label>
+                    <div class="mt-1">
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            name="confirmPassword" 
+                            autocomplete="new-password" 
+                            required
+                            class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm dark:bg-slate-700 dark:text-slate-200"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                </div>
+
+                <!-- Error Message Area -->
+                <div id="signup-error" class="text-red-500 dark:text-red-400 text-sm min-h-[1.25rem]" aria-live="assertive">
+                    <!-- Error messages will be inserted here -->
+                </div>
+
+                <!-- Submit Button Container -->
+                <div id="signup-button-container">
+                    <button 
+                        type="submit" 
+                        id="signup-submit-btn"
+                        class="w-full py-2.5 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-150 ease-in-out text-white bg-brand-500 hover:bg-brand-600 focus:ring-brand-500"
+                    >
+                        Criar Conta
+                    </button>
+                </div>
+            </form>
+
+            <!-- Login Link -->
+            <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+                Já tem uma conta?
+                <a href="login.html" class="font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300">
+                    Entre aqui
+                </a>
+            </p>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="js/app-bundle.js"></script>
+    <script>
+        // Signup page initialization
+        (function() {
+            console.log("Initializing Signup Page...");
+            
+            const form = document.getElementById('signup-form');
+            const errorDiv = document.getElementById('signup-error');
+            const buttonContainer = document.getElementById('signup-button-container');
+            
+            if (form && buttonContainer) {
+                form.addEventListener('submit', async function(event) {
+                    event.preventDefault();
+                    
+                    const submitButton = buttonContainer.querySelector('button');
+                    if (!submitButton || submitButton.disabled) return;
+                    
+                    const name = form.name.value.trim();
+                    const email = form.email.value.trim();
+                    const password = form.password.value;
+                    const confirmPassword = form.confirmPassword.value;
+                    
+                    // Client-side validation
+                    if (!name || !email || !password || !confirmPassword) {
+                        if (errorDiv) errorDiv.textContent = 'Por favor, preencha todos os campos.';
+                        return;
+                    }
+                    if (!/\S+@\S+\.\S+/.test(email)) {
+                        if (errorDiv) errorDiv.textContent = 'Por favor, insira um email válido.';
+                        return;
+                    }
+                    if (password.length < 6) {
+                        if (errorDiv) errorDiv.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+                        return;
+                    }
+                    if (password !== confirmPassword) {
+                        if (errorDiv) errorDiv.textContent = 'As senhas não coincidem.';
+                        return;
+                    }
+                    if (errorDiv) errorDiv.textContent = '';
+                    
+                    // Show loading state
+                    window.Components.setButtonLoading(submitButton, true, 'Criando conta...', 'Criar Conta');
+                    
+                    // Call registration logic
+                    const registerSuccess = await window.Auth.register(name, email, password);
+                    
+                    // Handle registration result
+                    if (!registerSuccess) {
+                        const errorMessage = window.State.getState('error') || 'Registro falhou. Por favor, tente novamente.';
+                        if (errorDiv) errorDiv.textContent = errorMessage;
+                        
+                        // Restore button state
+                        window.Components.setButtonLoading(submitButton, false, null, 'Criar Conta');
+                    }
+                    // On success: Auth.register calls Auth.login which handles redirect
+                });
+            } else {
+                console.error("Could not find signup form or button container.");
+            }
+        })();
+    </script>
+</body>
+</html>
+
+

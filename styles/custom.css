@@ -1,0 +1,523 @@
+/* Custom styles for Rio Flood Monitor */
+
+/* MapLibre Map Container */
+#mapContainer {
+    position: relative;
+    min-height: 384px;
+}
+
+/* Ensure map fills container */
+.maplibregl-map {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Custom MapLibre control styling */
+.maplibregl-ctrl-group {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.maplibregl-ctrl-group button {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 6px !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+    background-color: rgba(14, 165, 233, 0.1) !important;
+}
+
+.maplibregl-ctrl-group button + button {
+    border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Dark mode map controls */
+.dark .maplibregl-ctrl-group {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .maplibregl-ctrl-group button:hover {
+    background-color: rgba(14, 165, 233, 0.2) !important;
+}
+
+.dark .maplibregl-ctrl-group button + button {
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Attribution control styling */
+.maplibregl-ctrl-attrib {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+}
+
+.dark .maplibregl-ctrl-attrib {
+    background: rgba(30, 41, 59, 0.9) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.maplibregl-ctrl-attrib a {
+    color: #0ea5e9 !important;
+}
+
+/* Scale control styling */
+.maplibregl-ctrl-scale {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(0, 0, 0, 0.1) !important;
+    border-top: none !important;
+    border-radius: 0 0 4px 4px !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+.dark .maplibregl-ctrl-scale {
+    background: rgba(30, 41, 59, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Popup styling */
+.maplibregl-popup-content {
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    padding: 16px !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+.dark .maplibregl-popup-content {
+    background: #1e293b !important;
+    color: white !important;
+}
+
+.maplibregl-popup-close-button {
+    font-size: 24px !important;
+    padding: 4px 8px !important;
+    color: #64748b !important;
+}
+
+.maplibregl-popup-close-button:hover {
+    background: rgba(14, 165, 233, 0.1) !important;
+    color: #0ea5e9 !important;
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-color: white transparent transparent transparent !important;
+}
+
+.dark .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-left .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-color: #1e293b transparent transparent transparent !important;
+}
+
+/* Smooth map animations */
+.maplibregl-canvas {
+    transition: filter 0.3s ease;
+}
+
+/* Loading state for map */
+#mapContainer .maplibregl-canvas-container.maplibregl-interactive {
+    cursor: grab;
+}
+
+#mapContainer .maplibregl-canvas-container.maplibregl-interactive:active {
+    cursor: grabbing;
+}
+
+/* Beautiful map tooltips */
+.map-tooltip .maplibregl-popup-content {
+    padding: 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.map-tooltip .maplibregl-popup-tip {
+    border-top-color: white !important;
+}
+
+.dark .map-tooltip .maplibregl-popup-tip {
+    border-top-color: #1e293b !important;
+}
+
+/* Marker pulse animation on critical status */
+@keyframes markerPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* Map loading overlay enhancement */
+#mapLoading {
+    backdrop-filter: blur(8px);
+    transition: opacity 0.3s ease-out;
+}
+
+/* Smooth zoom controls */
+.maplibregl-ctrl-group button {
+    transition: all 0.2s ease !important;
+}
+
+.maplibregl-ctrl-group button:active {
+    transform: scale(0.95);
+}
+
+/* Smooth transitions for interactive elements */
+.transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effect for cards */
+.card-hover {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Status badge animations */
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.pulse-slow {
+    animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Toast notification animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.toast-enter {
+    animation: slideInRight 0.3s ease-out;
+}
+
+.toast-exit {
+    animation: slideOutRight 0.3s ease-in;
+}
+
+/* Modal animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-backdrop {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    animation: scaleIn 0.2s ease-out;
+}
+
+/* Camera feed loading state */
+.camera-loading {
+    position: relative;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+}
+
+.dark .camera-loading {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Status indicator styles */
+.status-indicator {
+    position: relative;
+    display: inline-block;
+}
+
+.status-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    opacity: 0.3;
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-loading {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+}
+
+/* Custom scrollbar for modal content */
+.modal-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.dark .modal-scroll::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+/* Focus visible styles for accessibility */
+*:focus-visible {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    header,
+    #toastContainer,
+    #loadingOverlay,
+    button {
+        display: none !important;
+    }
+    
+    main {
+        padding: 0;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* Notification Panel Styles */
+#notificationPanel {
+    animation: slideDownFade 0.2s ease-out;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes slideDownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#notificationList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#notificationList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#notificationList::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.dark #notificationList::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+/* Notification item hover effect */
+#notificationList > div {
+    position: relative;
+}
+
+#notificationList > div::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: transparent;
+    transition: background 0.2s ease;
+}
+
+#notificationList > div:hover::before {
+    background: #0ea5e9;
+}
+
+/* Badge pulse animation */
+#alertBadge {
+    animation: badgePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Map Fullscreen Mode */
+.map-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    animation: mapFullscreenIn 0.3s ease-out;
+}
+
+@keyframes mapFullscreenIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.map-fullscreen #mapContainer {
+    height: calc(100vh - 60px) !important;
+}
+
+/* Fullscreen button transition */
+#mapFullscreenBtn {
+    transition: all 0.2s ease;
+}
+
+#mapFullscreenBtn:hover {
+    transform: scale(1.1);
+}
+
+#mapFullscreenBtn:active {
+    transform: scale(0.95);
+}
+
