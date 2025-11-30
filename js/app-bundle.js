@@ -731,7 +731,7 @@
                         maxWidth: 100,
                         unit: 'metric'
                     });
-                    Map.map.addControl(scale, 'bottom-left');
+                    Map.map.addControl(scale, 'top-left');
                     
                     // Add geolocate control
                     const geolocate = new maplibregl.GeolocateControl({
