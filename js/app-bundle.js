@@ -1178,6 +1178,24 @@
                 Map.map.off('click', 'polygons-fill', Map._polygonClickHandler);
                 
                 Map._polygonClickHandler = function(e) {
+                    // Check if we clicked on a camera first - cameras should take priority
+                    const cameraFeatures = Map.map.queryRenderedFeatures(e.point, {
+                        layers: ['cameras-layer']
+                    });
+                    
+                    if (cameraFeatures.length > 0) {
+                        return; // Don't handle polygon click if camera was clicked
+                    }
+                    
+                    // Check if we clicked on a Waze alert - Waze alerts should take priority
+                    const wazeFeatures = Map.map.queryRenderedFeatures(e.point, {
+                        layers: ['waze-layer']
+                    });
+                    
+                    if (wazeFeatures.length > 0) {
+                        return; // Don't handle polygon click if Waze alert was clicked
+                    }
+                    
                     if (e.features.length > 0) {
                         const feature = e.features[0];
                         const polygonId = feature.properties.polygonId;
