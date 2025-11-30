@@ -476,10 +476,16 @@
     
     const Auth = {
         isAuthenticated: function() {
-            // const urlToken = new URLSearchParams(window.location.search).get('token');
-            // if (urlToken) {
-            //     Storage.setAuthToken(urlToken);
-            // }
+            // Use this for url token based authentication
+            // Obs: Must be used together with redirect /index.html?token=... in login function
+            const urlToken = new URLSearchParams(window.location.search).get('token');
+            if (urlToken) {
+                Storage.setAuthToken(urlToken);
+            }
+            // Remove token from current url
+            window.history.replaceState({}, document.title, window.location.pathname);
+            // ---
+
             const token = Storage.getAuthToken();
             return !!token;
         },
@@ -517,7 +523,12 @@
                         State.setState('currentUser', user);
                         State.setState('error', null);
                         // Redirect to main app
-                        window.location.href = 'index.html';
+                        // window.location.href = 'index.html';
+
+                        // Redirect to main app with url token
+                        // Note: Must be used together with logic in Auth.isAuthenticated()
+                        window.location.href = 'index.html?token=' + data.token;
+
                         return true;
                     } else {
                         console.error('Login succeeded but failed to fetch user details');
@@ -641,8 +652,19 @@
     const Map = {
         map: null,
         markers: {},
-        hoveredMarkerId: null,
+        hoveredPolygonId: null,
         popup: null,
+        pulseAnimationId: null,
+        layerVisibility: {
+            polygons: true,
+            cameras: true,
+            waze: false,
+            weather: false
+        },
+        is3DMode: false,
+        cameras: [],
+        wazeAlerts: [],
+        weatherStations: [],
         
         initMap: function(containerId) {
             return new Promise(function(resolve, reject) {
@@ -660,11 +682,12 @@
                         return;
                     }
                     
-                    // Initialize MapLibre map with beautiful style
+                    // Initialize MapLibre map
                     Map.map = new maplibregl.Map({
                         container: containerId,
                         style: {
                             version: 8,
+                            glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
                             sources: {
                                 'osm': {
                                     type: 'raster',
@@ -695,7 +718,7 @@
                         fadeDuration: 300
                     });
                     
-                    // Add navigation controls with custom styling
+                    // Add navigation controls
                     const nav = new maplibregl.NavigationControl({
                         showCompass: true,
                         showZoom: true,
@@ -710,7 +733,7 @@
                     });
                     Map.map.addControl(scale, 'bottom-left');
                     
-                    // Add geolocate control for user location
+                    // Add geolocate control
                     const geolocate = new maplibregl.GeolocateControl({
                         positionOptions: {
                             enableHighAccuracy: true
@@ -722,129 +745,8 @@
                     
                     // Handle map load
                     Map.map.on('load', function() {
-                        // Add source for markers
-                        Map.map.addSource('markers', {
-                            type: 'geojson',
-                            data: {
-                                type: 'FeatureCollection',
-                                features: []
-                            }
-                        });
-                        
-                        // Add marker circles layer with glow effect
-                        Map.map.addLayer({
-                            id: 'marker-glow',
-                            type: 'circle',
-                            source: 'markers',
-                            paint: {
-                                'circle-radius': [
-                                    'interpolate',
-                                    ['linear'],
-                                    ['zoom'],
-                                    8, 12,
-                                    12, 20,
-                                    16, 30
-                                ],
-                                'circle-color': ['get', 'color'],
-                                'circle-opacity': 0.2,
-                                'circle-blur': 1
-                            }
-                        });
-                        
-                        // Add main marker layer
-                        Map.map.addLayer({
-                            id: 'markers-layer',
-                            type: 'circle',
-                            source: 'markers',
-                            paint: {
-                                'circle-radius': [
-                                    'interpolate',
-                                    ['linear'],
-                                    ['zoom'],
-                                    8, 8,
-                                    12, 14,
-                                    16, 20
-                                ],
-                                'circle-color': ['get', 'color'],
-                                'circle-stroke-width': 2,
-                                'circle-stroke-color': '#ffffff',
-                                'circle-opacity': [
-                                    'case',
-                                    ['boolean', ['feature-state', 'hover'], false],
-                                    1,
-                                    0.9
-                                ]
-                            }
-                        });
-                        
-                        // Create popup for tooltips
-                        Map.popup = new maplibregl.Popup({
-                            closeButton: false,
-                            closeOnClick: false,
-                            className: 'map-tooltip',
-                            offset: 15
-                        });
-                        
-                        // Change cursor on hover
-                        Map.map.on('mouseenter', 'markers-layer', function(e) {
-                            Map.map.getCanvas().style.cursor = 'pointer';
-                            
-                            // Show tooltip
-                            if (e.features.length > 0) {
-                                const feature = e.features[0];
-                                const coordinates = feature.geometry.coordinates.slice();
-                                const name = feature.properties.name;
-                                const neighborhood = feature.properties.neighborhood;
-                                const status = feature.properties.status;
-                                
-                                // Get status info
-                                const statusInfo = Colors.getStatusColors(status);
-                                
-                                // Create tooltip HTML
-                                const html = `
-                                    <div class="text-sm">
-                                        <div class="font-semibold text-slate-900 dark:text-white mb-1">${name}</div>
-                                        ${neighborhood ? `<div class="text-xs text-slate-600 dark:text-slate-400 mb-2">${neighborhood}</div>` : ''}
-                                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bg} ${statusInfo.text}">
-                                            ${statusInfo.name}
-                                        </div>
-                                    </div>
-                                `;
-                                
-                                Map.popup.setLngLat(coordinates).setHTML(html).addTo(Map.map);
-                            }
-                        });
-                        
-                        Map.map.on('mouseleave', 'markers-layer', function() {
-                            Map.map.getCanvas().style.cursor = '';
-                            Map.popup.remove();
-                            
-                            if (Map.hoveredMarkerId !== null) {
-                                Map.map.setFeatureState(
-                                    { source: 'markers', id: Map.hoveredMarkerId },
-                                    { hover: false }
-                                );
-                                Map.hoveredMarkerId = null;
-                            }
-                        });
-                        
-                        // Hover effect
-                        Map.map.on('mousemove', 'markers-layer', function(e) {
-                            if (e.features.length > 0) {
-                                if (Map.hoveredMarkerId !== null) {
-                                    Map.map.setFeatureState(
-                                        { source: 'markers', id: Map.hoveredMarkerId },
-                                        { hover: false }
-                                    );
-                                }
-                                Map.hoveredMarkerId = e.features[0].id;
-                                Map.map.setFeatureState(
-                                    { source: 'markers', id: Map.hoveredMarkerId },
-                                    { hover: true }
-                                );
-                            }
-                        });
-                        
+                        Map._initializeLayers();
+                        Map._setupInteractions();
                         resolve(Map.map);
                     });
                     
@@ -859,16 +761,351 @@
             });
         },
         
-        centerMap: function(lng, lat, zoom, duration) {
-            if (!this.map) return;
+        _initializeLayers: function() {
+            // Layer 1: Polygon boundaries
+            Map.map.addSource('polygons', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            });
             
-            this.map.flyTo({
-                center: [lng, lat],
-                zoom: zoom || 14,
-                duration: duration || 2000,
-                essential: true,
-                easing: function(t) {
-                    return t * (2 - t); // ease-out-quad
+            // Polygon fill layer
+            Map.map.addLayer({
+                id: 'polygons-fill',
+                type: 'fill',
+                source: 'polygons',
+                paint: {
+                    'fill-color': ['get', 'fillColor'],
+                    'fill-opacity': 0.4
+                }
+            });
+            
+            // Polygon stroke layer
+            Map.map.addLayer({
+                id: 'polygons-stroke',
+                type: 'line',
+                source: 'polygons',
+                paint: {
+                    'line-color': ['get', 'strokeColor'],
+                    'line-width': 2,
+                    'line-opacity': 1
+                }
+            });
+            
+            // Layer 2: Cameras
+            Map.map.addSource('cameras', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: []
+                },
+                cluster: true,
+                clusterMaxZoom: 12,
+                clusterRadius: 50
+            });
+            
+            // Camera clusters
+            Map.map.addLayer({
+                id: 'camera-clusters',
+                type: 'circle',
+                source: 'cameras',
+                filter: ['has', 'point_count'],
+                paint: {
+                    'circle-color': '#3b82f6',
+                    'circle-radius': [
+                        'step',
+                        ['get', 'point_count'],
+                        15, 5,
+                        20, 10,
+                        25
+                    ],
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff'
+                },
+                layout: {
+                    'visibility': 'visible'
+                }
+            });
+            
+            // Camera cluster count
+            Map.map.addLayer({
+                id: 'camera-cluster-count',
+                type: 'symbol',
+                source: 'cameras',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': ['to-string', ['get', 'point_count']],
+                    'text-font': ['Noto Sans Regular'],
+                    'text-size': 12,
+                    'text-allow-overlap': true,
+                    'visibility': 'visible'
+                },
+                paint: {
+                    'text-color': '#ffffff',
+                    'text-halo-color': '#3b82f6',
+                    'text-halo-width': 1
+                }
+            });
+            
+            // Individual cameras
+            Map.map.addLayer({
+                id: 'cameras-layer',
+                type: 'circle',
+                source: 'cameras',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': ['get', 'color'],
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff',
+                    'circle-opacity': 0.9
+                },
+                layout: {
+                    'visibility': 'visible'
+                }
+            });
+            
+            // Layer 3: Waze alerts
+            Map.map.addSource('waze', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            });
+            
+            Map.map.addLayer({
+                id: 'waze-layer',
+                type: 'circle',
+                source: 'waze',
+                paint: {
+                    'circle-radius': 10,
+                    'circle-color': '#f59e0b',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff',
+                    'circle-opacity': ['get', 'opacity']
+                },
+                layout: {
+                    'visibility': 'visible'
+                }
+            });
+            
+            // Layer 4: Weather stations
+            Map.map.addSource('weather', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            });
+            
+            // Weather station circles (rain accumulation)
+            Map.map.addLayer({
+                id: 'weather-circles',
+                type: 'circle',
+                source: 'weather',
+                paint: {
+                    'circle-radius': ['get', 'radius'],
+                    'circle-color': ['get', 'color'],
+                    'circle-opacity': 0.3,
+                    'circle-stroke-width': 0
+                },
+                layout: {
+                    'visibility': 'none'
+                }
+            });
+            
+            // Weather station icons
+            Map.map.addLayer({
+                id: 'weather-layer',
+                type: 'circle',
+                source: 'weather',
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': '#06b6d4',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff'
+                },
+                layout: {
+                    'visibility': 'none'
+                }
+            });
+            
+            // Create popup
+            Map.popup = new maplibregl.Popup({
+                closeButton: false,
+                closeOnClick: false,
+                className: 'map-tooltip',
+                offset: 15
+            });
+        },
+        
+        _setupInteractions: function() {
+            // Polygon interactions
+            Map.map.on('mouseenter', 'polygons-fill', function(e) {
+                Map.map.getCanvas().style.cursor = 'pointer';
+                
+                if (e.features.length > 0) {
+                    const feature = e.features[0];
+                    const props = feature.properties;
+                    
+                    // Get centroid for popup position
+                    const bounds = new maplibregl.LngLatBounds();
+                    if (feature.geometry.type === 'Polygon') {
+                        feature.geometry.coordinates[0].forEach(function(coord) {
+                            bounds.extend(coord);
+                        });
+                    }
+                    const center = bounds.getCenter();
+                    
+                    // Create rich popup
+                    const statusInfo = Colors.getStatusColors(props.status);
+                    let html = '<div class="text-sm">';
+                    html += '<div class="font-semibold text-slate-900 dark:text-white mb-1">' + props.name + '</div>';
+                    if (props.neighborhood) {
+                        html += '<div class="text-xs text-slate-600 dark:text-slate-400 mb-2">' + props.neighborhood + '</div>';
+                    }
+                    html += '<div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ' + statusInfo.bg + ' ' + statusInfo.text + ' mb-2">';
+                    html += statusInfo.name;
+                    html += '</div>';
+                    
+                    // Add stats
+                    html += '<div class="mt-2 space-y-1">';
+                    if (props.cameraCount > 0) {
+                        html += '<div class="text-xs">🎥 ' + props.cameraCount + ' câmeras detectaram</div>';
+                    }
+                    if (props.wazeCount > 0) {
+                        html += '<div class="text-xs">📍 ' + props.wazeCount + ' reports Waze</div>';
+                    }
+                    if (props.rainAccum > 0) {
+                        html += '<div class="text-xs">🌧️ ' + props.rainAccum + 'mm/15min chuva</div>';
+                    }
+                    html += '</div>';
+                    html += '<div class="mt-2 text-xs text-slate-500 dark:text-slate-400">[Clique para detalhes]</div>';
+                    html += '</div>';
+                    
+                    Map.popup.setLngLat(center).setHTML(html).addTo(Map.map);
+                }
+            });
+            
+            Map.map.on('mouseleave', 'polygons-fill', function() {
+                Map.map.getCanvas().style.cursor = '';
+                Map.popup.remove();
+            });
+            
+            // Camera interactions
+            Map.map.on('mouseenter', 'cameras-layer', function() {
+                Map.map.getCanvas().style.cursor = 'pointer';
+            });
+            
+            Map.map.on('mouseleave', 'cameras-layer', function() {
+                Map.map.getCanvas().style.cursor = '';
+            });
+            
+            Map.map.on('click', 'cameras-layer', function(e) {
+                if (e.features.length > 0) {
+                    const feature = e.features[0];
+                    const props = feature.properties;
+                    
+                    let html = '<div class="text-sm">';
+                    html += '<div class="font-semibold text-slate-900 dark:text-white mb-2">📷 Câmera ' + props.codigo + '</div>';
+                    html += '<div class="text-xs text-slate-600 dark:text-slate-400 mb-2">' + (props.name || 'Sem nome') + '</div>';
+                    
+                    const status = props.label === 1 ? 'Detecção ativa' : props.label === 0 ? 'Normal' : 'Sem dados';
+                    const statusColor = props.label === 1 ? 'text-red-600' : props.label === 0 ? 'text-green-600' : 'text-gray-600';
+                    html += '<div class="text-xs ' + statusColor + ' font-semibold">' + status + '</div>';
+                    // Add camera image
+                    html += '<div class="mt-2">';
+                    html += '<img src="' + API.getCameraImageUrl(props.codigo) + '" alt="Câmera ' + props.codigo + '" class="w-full h-auto">';
+                    html += '</div>';
+                    
+                    new maplibregl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(html)
+                        .addTo(Map.map);
+                }
+            });
+            
+            // Camera cluster click - zoom in
+            Map.map.on('click', 'camera-clusters', function(e) {
+                const features = Map.map.queryRenderedFeatures(e.point, {
+                    layers: ['camera-clusters']
+                });
+                const clusterId = features[0].properties.cluster_id;
+                Map.map.getSource('cameras').getClusterExpansionZoom(clusterId, function(err, zoom) {
+                    if (err) return;
+                    Map.map.easeTo({
+                        center: features[0].geometry.coordinates,
+                        zoom: zoom
+                    });
+                });
+            });
+            
+            Map.map.on('mouseenter', 'camera-clusters', function() {
+                Map.map.getCanvas().style.cursor = 'pointer';
+            });
+            
+            Map.map.on('mouseleave', 'camera-clusters', function() {
+                Map.map.getCanvas().style.cursor = '';
+            });
+            
+            // Waze interactions
+            Map.map.on('mouseenter', 'waze-layer', function() {
+                Map.map.getCanvas().style.cursor = 'pointer';
+            });
+            
+            Map.map.on('mouseleave', 'waze-layer', function() {
+                Map.map.getCanvas().style.cursor = '';
+            });
+            
+            Map.map.on('click', 'waze-layer', function(e) {
+                if (e.features.length > 0) {
+                    const feature = e.features[0];
+                    const props = feature.properties;
+                    
+                    let html = '<div class="text-sm">';
+                    html += '<div class="font-semibold text-slate-900 dark:text-white mb-2">📍 Alerta Waze</div>';
+                    html += '<div class="text-xs text-slate-600 dark:text-slate-400 mb-1">' + (props.street || 'Localização') + '</div>';
+                    html += '<div class="text-xs text-slate-600 dark:text-slate-400 mb-1">Confiabilidade: ' + props.reliability + '/10</div>';
+                    html += '<div class="text-xs text-slate-500 dark:text-slate-400">' + props.ageMinutes + ' min atrás</div>';
+                    html += '</div>';
+                    
+                    new maplibregl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(html)
+                        .addTo(Map.map);
+                }
+            });
+            
+            // Weather interactions
+            Map.map.on('mouseenter', 'weather-layer', function() {
+                Map.map.getCanvas().style.cursor = 'pointer';
+            });
+            
+            Map.map.on('mouseleave', 'weather-layer', function() {
+                Map.map.getCanvas().style.cursor = '';
+            });
+            
+            Map.map.on('click', 'weather-layer', function(e) {
+                if (e.features.length > 0) {
+                    const feature = e.features[0];
+                    const props = feature.properties;
+                    
+                    let html = '<div class="text-sm">';
+                    html += '<div class="font-semibold text-slate-900 dark:text-white mb-2">🌡️ ' + props.name + '</div>';
+                    html += '<div class="text-xs text-slate-600 dark:text-slate-400 space-y-1">';
+                    html += '<div>15 min: ' + props.rain15min + 'mm</div>';
+                    html += '<div>1 hora: ' + props.rain1h + 'mm</div>';
+                    html += '<div>24 horas: ' + props.rain24h + 'mm</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    new maplibregl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(html)
+                        .addTo(Map.map);
                 }
             });
         },
@@ -876,27 +1113,53 @@
         addPolygonMarkers: function(polygons, onMarkerClick) {
             if (!this.map) return;
             
-            // Create GeoJSON features from polygons
-            const features = polygons.map(function(polygon, index) {
-                return {
-                    type: 'Feature',
-                    id: index,
-                    geometry: {
+            // Create GeoJSON features from polygons with actual geometries
+            const features = polygons.map(function(polygon) {
+                // Use actual polygon geometry if available
+                let geometry;
+                if (polygon.geometry && Array.isArray(polygon.geometry) && polygon.geometry.length > 0) {
+                    // API returns geometry as array of coordinates directly
+                    // Format: [[lng, lat], [lng, lat], ...]
+                    geometry = {
+                        type: 'Polygon',
+                        coordinates: polygon.geometry
+                    };
+                } else if (polygon.geometry && polygon.geometry.coordinates) {
+                    // Alternative format: {coordinates: [...]}
+                    geometry = {
+                        type: 'Polygon',
+                        coordinates: polygon.geometry.coordinates
+                    };
+                } else {
+                    // Fallback to point if no geometry
+                    geometry = {
                         type: 'Point',
                         coordinates: [polygon.lng_centroid, polygon.lat_centroid]
-                    },
+                    };
+                }
+                
+                const statusCode = polygon.status_code || 0;
+                const color = Colors.getStatusHex(statusCode);
+                
+                return {
+                    type: 'Feature',
+                    geometry: geometry,
                     properties: {
                         polygonId: polygon.cluster_id,
                         name: polygon.main_route || 'Região',
                         neighborhood: polygon.main_neighborhood || '',
-                        color: Colors.getStatusHex(polygon.status_code),
-                        status: polygon.status_code
+                        fillColor: color,
+                        strokeColor: color,
+                        status: statusCode,
+                        cameraCount: polygon.camera_flood_count || 0,
+                        wazeCount: polygon.waze_flood_count || 0,
+                        rainAccum: polygon.acumulado_chuva_15_min_1 || 0
                     }
                 };
             });
             
-            // Update markers source
-            const source = this.map.getSource('markers');
+            // Update polygons source
+            const source = this.map.getSource('polygons');
             if (source) {
                 source.setData({
                     type: 'FeatureCollection',
@@ -904,40 +1167,314 @@
                 });
             }
             
-            // Store markers for reference
+            // Store polygons for reference
             this.markers = {};
-            polygons.forEach(function(polygon, index) {
-                Map.markers[polygon.cluster_id] = {
-                    id: index,
-                    polygon: polygon
-                };
+            polygons.forEach(function(polygon) {
+                Map.markers[polygon.cluster_id] = polygon;
             });
             
-            // Add click handler
+            // Add click handler for polygons
             if (onMarkerClick) {
-                // Remove existing click handler
-                Map.map.off('click', 'markers-layer', Map._clickHandler);
+                Map.map.off('click', 'polygons-fill', Map._polygonClickHandler);
                 
-                // Create new click handler
-                Map._clickHandler = function(e) {
+                Map._polygonClickHandler = function(e) {
                     if (e.features.length > 0) {
                         const feature = e.features[0];
                         const polygonId = feature.properties.polygonId;
                         
-                        // Add ripple effect
+                        // Add ripple effect at click point
                         Map._addRippleEffect(e.lngLat);
                         
-                        // Call the callback
                         onMarkerClick(polygonId);
                     }
                 };
                 
-                Map.map.on('click', 'markers-layer', Map._clickHandler);
+                Map.map.on('click', 'polygons-fill', Map._polygonClickHandler);
+            }
+            
+            // Start pulse animation for critical polygons
+            Map._startPulseAnimation();
+        },
+        
+        loadCameras: async function() {
+            try {
+                this.cameras = await API.getCameras();
+                this._updateCameraLayer();
+            } catch (error) {
+                console.error('Error loading cameras:', error);
             }
         },
         
+        _updateCameraLayer: function() {
+            if (!this.map || !this.cameras) return;
+            
+            const features = this.cameras.map(function(camera) {
+                let color = '#9ca3af'; // gray - no data
+                if (camera.label === 1) color = '#ef4444'; // red - flood detected
+                else if (camera.label === 0) color = '#10b981'; // green - normal
+                
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [camera.Longitude, camera.Latitude]
+                    },
+                    properties: {
+                        codigo: camera.Codigo,
+                        name: camera['Nome da Camera'] || '',
+                        label: camera.label,
+                        color: color,
+                        clusterId: camera.cluster_id
+                    }
+                };
+            });
+            
+            const source = this.map.getSource('cameras');
+            if (source) {
+                source.setData({
+                    type: 'FeatureCollection',
+                    features: features
+                });
+            }
+        },
+        
+        loadWazeAlerts: async function() {
+            try {
+                const response = await fetch(CONFIG.apiBaseUrl + '/waze/alerts');
+                const alerts = await response.json();
+                
+                // Filter for flood alerts only and apply age filter (30 min max)
+                const now = new Date();
+                this.wazeAlerts = alerts.filter(function(alert) {
+                    if (alert.subtype !== 'HAZARD_WEATHER_FLOOD') return false;
+                    
+                    const alertTime = new Date(alert.pubMillis);
+                    const ageMinutes = (now - alertTime) / 60000;
+                    return ageMinutes <= 30;
+                });
+                
+                this._updateWazeLayer();
+            } catch (error) {
+                console.error('Error loading Waze alerts:', error);
+            }
+        },
+        
+        _updateWazeLayer: function() {
+            if (!this.map || !this.wazeAlerts) return;
+            
+            const now = new Date();
+            const features = this.wazeAlerts.map(function(alert) {
+                const alertTime = new Date(alert.pubMillis);
+                const ageMinutes = (now - alertTime) / 60000;
+                
+                // Calculate opacity based on age
+                let opacity = 1.0;
+                if (ageMinutes > 20) opacity = 0.4;
+                else if (ageMinutes > 10) opacity = 0.7;
+                
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [alert.longitude, alert.latitude]
+                    },
+                    properties: {
+                        uuid: alert.uuid,
+                        street: alert.street || 'Sem endereço',
+                        reliability: alert.reliability || 0,
+                        ageMinutes: Math.round(ageMinutes),
+                        opacity: opacity
+                    }
+                };
+            });
+            
+            const source = this.map.getSource('waze');
+            if (source) {
+                source.setData({
+                    type: 'FeatureCollection',
+                    features: features
+                });
+            }
+        },
+        
+        loadWeatherStations: async function() {
+            try {
+                const response = await fetch(CONFIG.apiBaseUrl + '/stations/alertario/api');
+                this.weatherStations = await response.json();
+                this._updateWeatherLayer();
+            } catch (error) {
+                console.error('Error loading weather stations:', error);
+            }
+        },
+        
+        _updateWeatherLayer: function() {
+            if (!this.map || !this.weatherStations) return;
+            
+            const features = this.weatherStations.map(function(station) {
+                const rain15min = station.acumulado_chuva_15_min || 0;
+                const rain1h = station.acumulado_chuva_1_h || 0;
+                const rain24h = station.acumulado_chuva_24_h || 0;
+                
+                // Calculate circle radius based on 15min accumulation
+                const radius = Math.min(20 + (rain15min * 8), 100);
+                
+                // Color gradient based on 1h accumulation
+                let color = '#bfdbfe'; // light blue
+                if (rain1h > 20) color = '#1e40af'; // deep blue
+                else if (rain1h > 10) color = '#3b82f6'; // medium blue
+                else if (rain1h > 5) color = '#60a5fa'; // light-medium blue
+                
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [station.longitude, station.latitude]
+                    },
+                    properties: {
+                        name: station.estacao,
+                        rain15min: rain15min.toFixed(1),
+                        rain1h: rain1h.toFixed(1),
+                        rain24h: rain24h.toFixed(1),
+                        radius: radius,
+                        color: color
+                    }
+                };
+            });
+            
+            const source = this.map.getSource('weather');
+            if (source) {
+                source.setData({
+                    type: 'FeatureCollection',
+                    features: features
+                });
+            }
+        },
+        
+        toggleLayer: function(layerName, visible) {
+            if (!this.map) return;
+            
+            this.layerVisibility[layerName] = visible;
+            const visibility = visible ? 'visible' : 'none';
+            
+            switch(layerName) {
+                case 'polygons':
+                    this.map.setLayoutProperty('polygons-fill', 'visibility', visibility);
+                    this.map.setLayoutProperty('polygons-stroke', 'visibility', visibility);
+                    break;
+                case 'cameras':
+                    this.map.setLayoutProperty('cameras-layer', 'visibility', visibility);
+                    this.map.setLayoutProperty('camera-clusters', 'visibility', visibility);
+                    this.map.setLayoutProperty('camera-cluster-count', 'visibility', visibility);
+                    break;
+                case 'waze':
+                    this.map.setLayoutProperty('waze-layer', 'visibility', visibility);
+                    if (visible && this.wazeAlerts.length === 0) {
+                        this.loadWazeAlerts();
+                    }
+                    break;
+                case 'weather':
+                    this.map.setLayoutProperty('weather-layer', 'visibility', visibility);
+                    this.map.setLayoutProperty('weather-circles', 'visibility', visibility);
+                    if (visible && this.weatherStations.length === 0) {
+                        this.loadWeatherStations();
+                    }
+                    break;
+            }
+        },
+        
+        toggle3DMode: function() {
+            if (!this.map) return;
+            
+            this.is3DMode = !this.is3DMode;
+            
+            if (this.is3DMode) {
+                this.map.easeTo({
+                    pitch: 45,
+                    bearing: -17.6,
+                    duration: 1000
+                });
+                
+                // Add 3D extrusion to polygons
+                if (this.map.getLayer('polygons-3d')) {
+                    this.map.setLayoutProperty('polygons-3d', 'visibility', 'visible');
+                } else {
+                    this.map.addLayer({
+                        id: 'polygons-3d',
+                        type: 'fill-extrusion',
+                        source: 'polygons',
+                        paint: {
+                            'fill-extrusion-color': ['get', 'fillColor'],
+                            'fill-extrusion-height': [
+                                'case',
+                                ['>=', ['get', 'status'], 3], 500,
+                                ['>=', ['get', 'status'], 2], 300,
+                                ['>=', ['get', 'status'], 1], 100,
+                                0
+                            ],
+                            'fill-extrusion-opacity': 0.6
+                        }
+                    }, 'polygons-fill');
+                }
+                
+                // Hide 2D layers
+                this.map.setLayoutProperty('polygons-fill', 'visibility', 'none');
+                this.map.setLayoutProperty('polygons-stroke', 'visibility', 'none');
+            } else {
+                this.map.easeTo({
+                    pitch: 0,
+                    bearing: 0,
+                    duration: 1000
+                });
+                
+                // Hide 3D layer
+                if (this.map.getLayer('polygons-3d')) {
+                    this.map.setLayoutProperty('polygons-3d', 'visibility', 'none');
+                }
+                
+                // Show 2D layers
+                this.map.setLayoutProperty('polygons-fill', 'visibility', 'visible');
+                this.map.setLayoutProperty('polygons-stroke', 'visibility', 'visible');
+            }
+        },
+        
+        _startPulseAnimation: function() {
+            if (this.pulseAnimationId) {
+                cancelAnimationFrame(this.pulseAnimationId);
+            }
+            
+            let opacity = 0.4;
+            let increasing = true;
+            
+            const animate = function() {
+                if (!Map.map || !Map.map.getLayer('polygons-fill')) return;
+                
+                if (increasing) {
+                    opacity += 0.01;
+                    if (opacity >= 0.6) increasing = false;
+                } else {
+                    opacity -= 0.01;
+                    if (opacity <= 0.2) increasing = true;
+                }
+                
+                // Only pulse polygons with status >= 2
+                try {
+                    Map.map.setPaintProperty('polygons-fill', 'fill-opacity', [
+                        'case',
+                        ['>=', ['get', 'status'], 2],
+                        opacity,
+                        0.4
+                    ]);
+                } catch (e) {
+                    // Layer might not be ready yet
+                }
+                
+                Map.pulseAnimationId = requestAnimationFrame(animate);
+            };
+            
+            animate();
+        },
+        
         _addRippleEffect: function(lngLat) {
-            // Create a temporary ripple effect on click
             const rippleId = 'ripple-' + Date.now();
             
             this.map.addSource(rippleId, {
@@ -962,7 +1499,6 @@
                 }
             });
             
-            // Animate ripple
             let radius = 5;
             const animate = function() {
                 radius += 2;
@@ -976,7 +1512,6 @@
                 if (radius < 50) {
                     requestAnimationFrame(animate);
                 } else {
-                    // Clean up
                     if (Map.map.getLayer(rippleId)) {
                         Map.map.removeLayer(rippleId);
                     }
@@ -987,6 +1522,20 @@
             };
             
             requestAnimationFrame(animate);
+        },
+        
+        centerMap: function(lng, lat, zoom, duration) {
+            if (!this.map) return;
+            
+            this.map.flyTo({
+                center: [lng, lat],
+                zoom: zoom || 14,
+                duration: duration || 2000,
+                essential: true,
+                easing: function(t) {
+                    return t * (2 - t);
+                }
+            });
         },
         
         resize: function() {
@@ -1006,10 +1555,16 @@
         },
         
         destroy: function() {
+            if (this.pulseAnimationId) {
+                cancelAnimationFrame(this.pulseAnimationId);
+            }
             if (this.map) {
                 this.map.remove();
                 this.map = null;
                 this.markers = {};
+                this.cameras = [];
+                this.wazeAlerts = [];
+                this.weatherStations = [];
             }
         }
     };
@@ -1822,6 +2377,62 @@
                 });
             }
             
+            // Map 3D toggle
+            const map3DToggle = document.getElementById('map3DToggle');
+            if (map3DToggle) {
+                map3DToggle.addEventListener('click', function() {
+                    Map.toggle3DMode();
+                });
+            }
+            
+            // Map layers toggle
+            const mapLayersToggle = document.getElementById('mapLayersToggle');
+            const mapLayersPanel = document.getElementById('mapLayersPanel');
+            if (mapLayersToggle && mapLayersPanel) {
+                mapLayersToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    mapLayersPanel.classList.toggle('hidden');
+                });
+                
+                // Close panel when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!mapLayersPanel.contains(e.target) && e.target !== mapLayersToggle) {
+                        mapLayersPanel.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Layer checkboxes
+            const layerPolygons = document.getElementById('layerPolygons');
+            const layerCameras = document.getElementById('layerCameras');
+            const layerWaze = document.getElementById('layerWaze');
+            const layerWeather = document.getElementById('layerWeather');
+            
+            if (layerPolygons) {
+                layerPolygons.addEventListener('change', function(e) {
+                    Map.toggleLayer('polygons', e.target.checked);
+                });
+            }
+            
+            if (layerCameras) {
+                layerCameras.addEventListener('change', function(e) {
+                    Map.toggleLayer('cameras', e.target.checked);
+                    self.updateLegend();
+                });
+            }
+            
+            if (layerWaze) {
+                layerWaze.addEventListener('change', function(e) {
+                    Map.toggleLayer('waze', e.target.checked);
+                });
+            }
+            
+            if (layerWeather) {
+                layerWeather.addEventListener('change', function(e) {
+                    Map.toggleLayer('weather', e.target.checked);
+                });
+            }
+            
             // Mobile menu
             const mobileMenuButton = document.getElementById('mobileMenuButton');
             const mobileMenu = document.getElementById('mobileMenu');
@@ -1892,6 +2503,7 @@
                 await UI.renderCriticalAlerts('criticalAlerts', function(p) { self.handleRegionClick(p); });
                 
                 this.updateLastUpdateTime();
+                this.updateLegend();
                 
                 console.log('✅ Loaded ' + this.state.polygons.length + ' regions');
                 
@@ -1922,6 +2534,9 @@
                     });
                     if (polygon) self.handleRegionClick(polygon);
                 });
+                
+                // Load camera data
+                await Map.loadCameras();
                 
                 console.log('✅ Map initialized successfully');
             } catch (error) {
@@ -2116,6 +2731,52 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
+            }
+        },
+        
+        updateLegend: function() {
+            if (!this.state.polygons) return;
+            
+            // Count polygons by status
+            const counts = {
+                critical: 0,
+                alert: 0,
+                attention: 0,
+                normal: 0
+            };
+            
+            this.state.polygons.forEach(function(polygon) {
+                const status = polygon.status_code || 0;
+                if (status >= 3) counts.critical++;
+                else if (status === 2) counts.alert++;
+                else if (status === 1) counts.attention++;
+                else counts.normal++;
+            });
+            
+            // Update legend counts
+            const legendCritical = document.getElementById('legendCritical');
+            const legendAlert = document.getElementById('legendAlert');
+            const legendAttention = document.getElementById('legendAttention');
+            const legendNormal = document.getElementById('legendNormal');
+            
+            if (legendCritical) legendCritical.textContent = '(' + counts.critical + ')';
+            if (legendAlert) legendAlert.textContent = '(' + counts.alert + ')';
+            if (legendAttention) legendAttention.textContent = '(' + counts.attention + ')';
+            if (legendNormal) legendNormal.textContent = '(' + counts.normal + ')';
+            
+            // Update camera legend if cameras layer is visible
+            const legendCameras = document.getElementById('legendCameras');
+            const legendCameraDetecting = document.getElementById('legendCameraDetecting');
+            
+            if (Map.layerVisibility.cameras && Map.cameras.length > 0) {
+                const detectingCount = Map.cameras.filter(function(cam) {
+                    return cam.label === 1;
+                }).length;
+                
+                if (legendCameras) legendCameras.classList.remove('hidden');
+                if (legendCameraDetecting) legendCameraDetecting.textContent = '(' + detectingCount + ')';
+            } else {
+                if (legendCameras) legendCameras.classList.add('hidden');
             }
         },
         
