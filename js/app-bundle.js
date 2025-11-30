@@ -715,7 +715,8 @@
                         pitch: 0,
                         bearing: 0,
                         antialias: true,
-                        fadeDuration: 300
+                        fadeDuration: 300,
+                        attributionControl: false
                     });
                     
                     // Add navigation controls
@@ -731,7 +732,7 @@
                         maxWidth: 100,
                         unit: 'metric'
                     });
-                    Map.map.addControl(scale, 'top-left');
+                    Map.map.addControl(scale, 'bottom-right');
                     
                     // Add geolocate control
                     const geolocate = new maplibregl.GeolocateControl({
@@ -2293,8 +2294,13 @@
                 
                 // Auto-refresh
                 this.setupAutoRefresh();
-                
+
+                // Hide loading overlay
                 this.showLoadingOverlay(false);
+
+                // Go to first polygon with status_code > 0
+                this.goToFirstPolygon();
+
                 console.log('✅ Application initialized');
                 
             } catch (error) {
@@ -2303,7 +2309,20 @@
                 UI.showToast('Erro ao inicializar aplicação', 'error');
             }
         },
-        
+
+        goToFirstPolygon: function() {
+            const firstPolygon = this.state.polygons.find(function(p) { return p.status_code > 0; });
+            if (firstPolygon) {
+                this.state.selectedPolygon = firstPolygon;
+                if (firstPolygon.lng_centroid && firstPolygon.lat_centroid) {
+                    // Wait 2.5 seconds before centering the map
+                    setTimeout(function() {
+                        Map.centerMap(firstPolygon.lng_centroid, firstPolygon.lat_centroid, 15, 4000);
+                    }, 1000);
+                }
+            }
+        },
+
         initializeUI: function() {
             const self = this;
             
@@ -2555,6 +2574,9 @@
                 
                 // Load camera data
                 await Map.loadCameras();
+
+                // Update legend
+                self.updateLegend();
                 
                 console.log('✅ Map initialized successfully');
             } catch (error) {
@@ -2570,13 +2592,7 @@
             this.state.selectedPolygon = polygon;
             Modal.open(polygon);
             if (polygon.lng_centroid && polygon.lat_centroid) {
-                Map.centerMap(polygon.lng_centroid, polygon.lat_centroid, 15, 1500);
-            }
-            
-            // Mark notification as read when region is clicked
-            if (polygon.status_code > 0) {
-                Notifications.markAsRead(polygon);
-                this.updateNotificationBadge();
+                Map.centerMap(polygon.lng_centroid, polygon.lat_centroid, 15, 2000);
             }
         },
         
