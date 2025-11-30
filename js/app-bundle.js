@@ -856,9 +856,9 @@
                 source: 'cameras',
                 filter: ['!', ['has', 'point_count']],
                 paint: {
-                    'circle-radius': 8,
+                    'circle-radius': 6,
                     'circle-color': ['get', 'color'],
-                    'circle-stroke-width': 2,
+                    'circle-stroke-width': 1.5,
                     'circle-stroke-color': '#ffffff',
                     'circle-opacity': 0.9
                 },
@@ -974,10 +974,10 @@
                     // Add stats
                     html += '<div class="mt-2 space-y-1">';
                     if (props.cameraCount > 0) {
-                        html += '<div class="text-xs">🎥 ' + props.cameraCount + ' câmeras detectaram</div>';
+                        html += '<div class="text-xs">🎥 ' + props.cameraCount + ` câmera${props.cameraCount > 1 ? 's' : ''} detect${props.cameraCount > 1 ? 'aram' : 'ou'}</div>`;
                     }
                     if (props.wazeCount > 0) {
-                        html += '<div class="text-xs">📍 ' + props.wazeCount + ' reports Waze</div>';
+                        html += '<div class="text-xs">📍 ' + props.wazeCount + ` report${props.wazeCount > 1 ? 's' : ''} Waze</div>`;
                     }
                     if (props.rainAccum > 0) {
                         html += '<div class="text-xs">🌧️ ' + props.rainAccum + 'mm/15min chuva</div>';

@@ -461,11 +461,12 @@
                         <option value="0">Normal</option>
                     </select>
                     
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Ordenar por:</label>
                     <select 
                         id="sortBy"
                         class="px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
-                        <option value="status">Ordenar por Status</option>
+                        <option value="status">Status</option>
                         <option value="name">Nome</option>
                         <option value="alerts">Número de Alertas</option>
                         <option value="updated">Última Atualização</option>
@@ -473,7 +474,7 @@
                 </div>
                 
                 <div class="flex items-center space-x-2">
-                    <span class="text-sm text-slate-600 dark:text-slate-400">
+                    <span class="text-sm text-slate-600 dark:text-slate-400 mr-1">
                         Última atualização: <span id="lastUpdate" class="font-medium">--</span>
                     </span>
                     <button 
