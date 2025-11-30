@@ -508,14 +508,14 @@
     
     <!-- Region Detail Modal -->
     <div id="regionModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
             <!-- Background overlay -->
             <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             
             <!-- Modal panel -->
-            <div class="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+            <div class="relative bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-6xl flex flex-col max-h-[90vh]">
                 <!-- Modal Header -->
-                <div class="bg-white dark:bg-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex-shrink-0 bg-white dark:bg-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 id="modalRegionName" class="text-2xl font-bold text-slate-900 dark:text-white">--</h3>
@@ -534,7 +534,7 @@
                 </div>
                 
                 <!-- Modal Tabs -->
-                <div class="border-b border-slate-200 dark:border-slate-700">
+                <div class="flex-shrink-0 border-b border-slate-200 dark:border-slate-700">
                     <nav class="flex space-x-8 px-6" aria-label="Tabs">
                         <button class="modal-tab active py-4 px-1 border-b-2 border-brand-500 font-medium text-sm text-brand-600 dark:text-brand-400" data-tab="overview">
                             Visão Geral
@@ -549,11 +549,11 @@
                 </div>
                 
                 <!-- Modal Content -->
-                <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+                <div class="flex-1 min-h-0">
                     <!-- Overview Tab -->
-                    <div id="overviewTab" class="tab-content">
+                    <div id="overviewTab" class="tab-content px-6 py-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
+                            <div class="flex flex-col">
                                 <h4 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Status da Região</h4>
                                 <div id="modalStatus" class="p-4 rounded-lg mb-4">
                                     <!-- Status content -->
@@ -562,9 +562,9 @@
                                     <!-- Metrics -->
                                 </div>
                             </div>
-                            <div>
+                            <div class="flex flex-col">
                                 <h4 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Localização</h4>
-                                <div id="modalMap" class="h-64 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                                <div id="modalMap" class="h-80 bg-slate-100 dark:bg-slate-700 rounded-lg">
                                     <!-- Mini map -->
                                 </div>
                             </div>
@@ -572,14 +572,14 @@
                     </div>
                     
                     <!-- Alerts Tab -->
-                    <div id="alertsTab" class="tab-content hidden">
+                    <div id="alertsTab" class="tab-content hidden px-6 py-6">
                         <div id="modalAlertsList" class="space-y-3">
                             <!-- Alert items -->
                         </div>
                     </div>
                     
                     <!-- Cameras Tab -->
-                    <div id="camerasTab" class="tab-content hidden">
+                    <div id="camerasTab" class="tab-content hidden px-6 py-6">
                         <div class="mb-4 flex items-center justify-between">
                             <p class="text-sm text-slate-600 dark:text-slate-400">
                                 <span id="modalCameraCount">0</span> câmeras disponíveis

@@ -521,3 +521,29 @@
     transform: scale(0.95);
 }
 
+/* Modal tab content scrolling fix */
+.tab-content {
+    display: none;
+}
+
+.tab-content:not(.hidden) {
+    display: block;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* Ensure modal content wrapper creates proper flex context */
+#regionModal .flex-1.min-h-0 {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Make tabs fill available space and scroll */
+#overviewTab:not(.hidden),
+#alertsTab:not(.hidden),
+#camerasTab:not(.hidden) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
