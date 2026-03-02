@@ -2537,8 +2537,7 @@
                 
                 const self = this;
                 UI.renderRegionCards(this.state.filteredPolygons, 'regionsGrid', function(p) { self.handleRegionClick(p); });
-                await UI.renderCriticalAlerts('criticalAlerts', function(p) { self.handleRegionClick(p); });
-                
+
                 this.updateLastUpdateTime();
                 this.updateLegend();
                 
