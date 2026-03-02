@@ -1801,42 +1801,6 @@
             }
         },
         
-        renderSummaryBar: function(polygons) {
-            const bar = document.getElementById('alertSummaryBar');
-            if (!bar) return;
-
-            const counts = { 3: 0, 2: 0, 1: 0, 0: 0 };
-            polygons.forEach(function(p) {
-                if (counts[p.status_code] !== undefined) counts[p.status_code]++;
-            });
-
-            const chips = [
-                { value: '3', label: 'Crítico',  bg: 'bg-red-100 dark:bg-red-900/30',    text: 'text-red-700 dark:text-red-300',    border: 'border-red-300 dark:border-red-700',    count: counts[3] },
-                { value: '2', label: 'Alerta',   bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700', count: counts[2] },
-                { value: '1', label: 'Atenção',  bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', border: 'border-yellow-300 dark:border-yellow-700', count: counts[1] },
-                { value: '0', label: 'Normal',   bg: 'bg-green-100 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',   border: 'border-green-300 dark:border-green-700',   count: counts[0] }
-            ];
-
-            bar.innerHTML = '';
-            chips.forEach(function(chip) {
-                const btn = document.createElement('button');
-                btn.className = 'flex items-center gap-2 px-4 py-2 rounded-full border font-medium text-sm transition-colors hover:opacity-80 ' + chip.bg + ' ' + chip.text + ' ' + chip.border;
-                btn.innerHTML = '<span>' + chip.label + '</span><span class="font-bold">' + chip.count + '</span>';
-                btn.setAttribute('aria-label', 'Filtrar por ' + chip.label);
-                btn.addEventListener('click', function() {
-                    var statusFilter = document.getElementById('statusFilter');
-                    if (!statusFilter) return;
-                    if (statusFilter.value === chip.value) {
-                        statusFilter.value = 'all';
-                    } else {
-                        statusFilter.value = chip.value;
-                    }
-                    statusFilter.dispatchEvent(new Event('change'));
-                });
-                bar.appendChild(btn);
-            });
-        },
-
         showToast: function(message, type) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
@@ -2573,8 +2537,7 @@
                 
                 const self = this;
                 UI.renderRegionCards(this.state.filteredPolygons, 'regionsGrid', function(p) { self.handleRegionClick(p); });
-                UI.renderSummaryBar(this.state.polygons);
-                
+
                 this.updateLastUpdateTime();
                 this.updateLegend();
                 
