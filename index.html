@@ -332,10 +332,10 @@
             </div>
         </section>
         
-        <!-- Map and Critical Alerts Section -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Map Section -->
+        <section class="grid grid-cols-1 gap-6 mb-6">
             <!-- Map -->
-            <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col h-96 lg:h-[556px]">
+            <div class="lg:col-span-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col h-96 lg:h-[556px]">
                 <div class="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Mapa Interativo</h2>
                     <div class="flex items-center space-x-2">
@@ -430,21 +430,13 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Critical Alerts Panel -->
-            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col h-96 lg:h-[556px]">
-                <div class="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Alertas Críticos</h2>
-                </div>
-                <div id="criticalAlerts" class="flex-1 p-4 space-y-3 overflow-y-auto min-h-0">
-                    <!-- Loading State -->
-                    <div class="flex items-center justify-center py-8">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-                    </div>
-                </div>
-            </div>
         </section>
-        
+
+        <!-- Alert Summary Bar -->
+        <section id="alertSummaryBar" class="flex flex-wrap gap-3 mb-6">
+            <!-- Chips rendered by JS -->
+        </section>
+
         <!-- Filters and Search -->
         <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
