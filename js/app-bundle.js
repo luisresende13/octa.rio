@@ -14,7 +14,16 @@
         apiBaseUrl: 'https://octa-api-871238133710.us-central1.run.app',
         authApiUrl: 'https://mongo-api-871238133710.us-central1.run.app',
         aiCameraClientUrl: 'https://ai-camera-client-871238133710.us-central1.run.app',
-        cameraUrl: 'https://dev.tixxi.rio/outvideo3/?KEY=O2417&CODE=',
+        // The old dev.tixxi.rio/outvideo3 endpoint served the live camera feed
+        // straight into an <img>/<iframe>. It is gone: the host's certificate
+        // expired and outvideo3 returns 404 on the new API. The replacement is
+        // Tixxi's two-step WHEP (WebRTC, H.265), which the browser negotiates
+        // itself -- the video goes straight from Tixxi to the viewer.
+        //
+        // The code/key for that handshake comes from a fleet login we cannot
+        // put in frontend JS, so ai-camera-client hands out one camera's pair
+        // at a time. Only the credential crosses a server, never the video.
+        streamCredentialsUrl: 'https://ai-camera-client.aws.octavision.com.br',
         timeout: 30000,
         retryAttempts: 3,
         storagePrefix: 'floodMonitor_'
@@ -406,14 +415,45 @@
             return await this.makeRequest('/cameras');
         },
         
-        getCameraImageUrl: function(cameraCode, addTimestamp = true) {
-            let url = CONFIG.cameraUrl + cameraCode;
-            if (addTimestamp) {
-                url += '&dt=' + Date.now();
+        /** Tixxi code/key for one camera, so the browser can open the stream itself. */
+        getStreamCredentials: async function(cameraCode) {
+            const res = await fetch(CONFIG.streamCredentialsUrl +
+                                    '/camera/' + encodeURIComponent(cameraCode) + '/stream-credentials');
+            if (!res.ok) {
+                throw new Error('Credenciais indisponíveis (' + res.status + ')');
             }
-            return url;
+            return await res.json();
         },
         
+        /**
+         * Plays a camera into a <video> that already exists in the DOM.
+         *
+         * Returns the session handle (or null) so the caller can stop it:
+         * Tixxi only sustains ~12-16 new sessions per minute and that budget
+         * is shared with scheduled inference, so streams nobody is watching
+         * must be released, not left to time out.
+         */
+        playCamera: async function(cameraCode, videoEl, statusEl) {
+            const setStatus = function(msg) { if (statusEl) statusEl.textContent = msg; };
+
+            if (!window.TixxiWhep || !window.TixxiWhep.isSupported()) {
+                setStatus('Vídeo ao vivo requer Google Chrome (codec H.265).');
+                return null;
+            }
+            setStatus('Conectando...');
+            try {
+                const creds = await API.getStreamCredentials(cameraCode);
+                const session = await window.TixxiWhep.play(creds, videoEl, {
+                    onError: function(e) { setStatus('Erro: ' + e.message); }
+                });
+                setStatus('Ao vivo');
+                return session;
+            } catch (e) {
+                setStatus('Não foi possível abrir: ' + e.message);
+                return null;
+            }
+        },
+
         searchPolygons: async function(query) {
             const polygons = await this.getPolygons();
             const lowerQuery = query.toLowerCase();
@@ -1017,15 +1057,31 @@
                     const status = props.label === 1 ? 'Detecção ativa' : props.label === 0 ? 'Normal' : 'Sem dados';
                     const statusColor = props.label === 1 ? 'text-red-600' : props.label === 0 ? 'text-green-600' : 'text-gray-600';
                     html += '<div class="text-xs ' + statusColor + ' font-semibold">' + status + '</div>';
-                    // Add camera image
+                    // Live feed (WHEP, straight from Tixxi).
+                    const videoId = 'cam-video-' + props.codigo;
+                    const statusId = 'cam-status-' + props.codigo;
                     html += '<div class="mt-2">';
-                    html += '<img src="' + API.getCameraImageUrl(props.codigo) + '" alt="Câmera ' + props.codigo + '" class="w-full h-auto">';
+                    html += '<video id="' + videoId + '" class="w-full h-auto bg-black rounded" autoplay muted playsinline controls></video>';
+                    html += '<div id="' + statusId + '" class="text-xs text-slate-500 mt-1"></div>';
                     html += '</div>';
-                    
-                    new maplibregl.Popup()
+
+                    const popup = new maplibregl.Popup()
                         .setLngLat(e.lngLat)
                         .setHTML(html)
                         .addTo(Map.map);
+
+                    let session = null;
+                    API.playCamera(props.codigo,
+                                   document.getElementById(videoId),
+                                   document.getElementById(statusId))
+                       .then(function(s) {
+                           session = s;
+                           // The popup may already be gone by the time the
+                           // handshake finishes; don't leave a session running
+                           // for a popup nobody is looking at.
+                           if (!popup.isOpen() && s) s.stop();
+                       });
+                    popup.on('close', function() { if (session) session.stop(); });
                 }
             });
             
@@ -1870,7 +1926,11 @@
                 clearInterval(this.cameraRefreshInterval);
                 this.cameraRefreshInterval = null;
             }
-            
+
+            // Release any live streams: an abandoned session still holds one of
+            // Tixxi's scarce per-minute slots until it times out.
+            if (this.stopGridStreams) this.stopGridStreams();
+
             // Clean up camera state to free memory
             if (this.cameraState) {
                 this.cameraState = null;
@@ -2143,6 +2203,17 @@
             }
         },
         
+        // Live streams currently open in the camera grid, so they can all be
+        // released when the page changes or the modal closes.
+        gridSessions: [],
+
+        stopGridStreams: function() {
+            (this.gridSessions || []).forEach(function(s) {
+                try { s.stop(); } catch (e) { /* already stopped */ }
+            });
+            this.gridSessions = [];
+        },
+
         renderCameraPage: function() {
             const camerasGridEl = document.getElementById('modalCamerasGrid');
             const paginationEl = document.getElementById('cameraPagination');
@@ -2155,17 +2226,46 @@
             const endIdx = Math.min(startIdx + camerasPerPage, allCameras.length);
             const camerasToShow = allCameras.slice(startIdx, endIdx);
             
+            // Leaving the previous page's streams running would hold Tixxi
+            // sessions for cameras no longer on screen.
+            this.stopGridStreams();
+
             // Clear grid
             camerasGridEl.innerHTML = '';
-            
-            // Render cameras for current page
+
+            const self = this;
+
+            // Render cameras for current page. Each one starts as a poster with
+            // a play button rather than auto-playing: a page of streams is a
+            // page of Tixxi sessions, and the per-minute budget is shared with
+            // scheduled inference. The viewer opens the ones they care about.
             camerasToShow.forEach(function(camera) {
+                const code = camera.Codigo;
+                const videoId = 'grid-video-' + code;
+                const statusId = 'grid-status-' + code;
                 const cameraEl = document.createElement('div');
                 cameraEl.className = 'bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden';
                 cameraEl.innerHTML = `
-                    <iframe src="${API.getCameraImageUrl(camera.Codigo)}" class="w-full h-64 border-0" loading="lazy" title="Câmera ${camera.Codigo}"></iframe>
-                    <div class="p-2 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300">Câmera ${camera.Codigo}</div>
+                    <div class="relative">
+                        <video id="${videoId}" class="w-full h-64 bg-black" muted playsinline controls></video>
+                        <button data-camera-play="${code}"
+                                class="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-sm font-medium hover:bg-black/30">
+                            ▶ Assistir
+                        </button>
+                    </div>
+                    <div class="p-2 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300">
+                        Câmera ${code}
+                        <span id="${statusId}" class="block text-xs text-slate-500"></span>
+                    </div>
                 `;
+                const playBtn = cameraEl.querySelector('[data-camera-play]');
+                playBtn.addEventListener('click', function() {
+                    playBtn.remove();
+                    API.playCamera(code,
+                                   document.getElementById(videoId),
+                                   document.getElementById(statusId))
+                       .then(function(s) { if (s) self.gridSessions.push(s); });
+                });
                 camerasGridEl.appendChild(cameraEl);
             });
             
